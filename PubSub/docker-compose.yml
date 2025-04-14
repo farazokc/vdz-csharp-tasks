@@ -1,0 +1,49 @@
+version: '2'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:3.4.6
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka-onboarding
+    environment:
+      # Listeners configuration
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
+      
+      # Security protocol mapping
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      
+      # Zookeeper connection
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      
+      # Additional settings
+      KAFKA_CREATE_TOPICS: "test-topic:1:1"
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+  
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui-onboarding
+    ports:
+      - "8080:8080"
+    environment:
+      # Naming your cluster (can be arbitrary)
+      KAFKA_CLUSTERS_0_NAME: Local
+      # Use the internal hostname and listener port defined for Kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+    depends_on:
+      - kafka
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-onboarding
+    hostname: my-rabbit
+    ports:
+      - "5673:5672"
+      - "15673:15672"
